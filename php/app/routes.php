@@ -406,7 +406,7 @@ return function (App $app) {
 
 	    $pdo->commit();
 
-	estate_refresh_low_priced($this->get(PDO::class));
+	chair_refresh_low_priced($this->get(PDO::class));
         } catch (PDOException $e) {
             $pdo->rollBack();
 //            $this->get('logger')->error(sprintf('failed to insert chair: %s', $e->getMessage()));
