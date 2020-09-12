@@ -71,6 +71,7 @@ return function (App $app) {
         ]));
 
 	file_get_contents('http://localhost/api/chair/refresh_low_priced');
+	file_get_contents('http://localhost/api/estate/refresh_low_priced');
         return $response->withHeader('Content-Type', 'application/json');
     });
 
@@ -407,6 +408,7 @@ return function (App $app) {
             }
 
             $pdo->commit();
+	    file_get_contents('http://localhost/api/estate/refresh_low_priced');
         } catch (PDOException $e) {
             $pdo->rollBack();
             $this->get('logger')->error(sprintf('failed to insert estate: %s', $e->getMessage()));
@@ -528,7 +530,7 @@ return function (App $app) {
         return $response->withHeader('Content-Type', 'application/json');
     });
 
-    $app->get('/api/estate/low_priced', function(Request $request, Response $response) {
+    $app->get('/api/estate/refresh_low_priced', function(Request $request, Response $response) {
         $query = 'SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate ORDER BY rent ASC, id ASC LIMIT :limit';
         $stmt = $this->get(PDO::class)->prepare($query);
         $stmt->bindValue(':limit', NUM_LIMIT, PDO::PARAM_INT);
@@ -543,7 +545,7 @@ return function (App $app) {
             return $response->withHeader('Content-Type', 'application/json');
         }
 
-        $response->getBody()->write(json_encode([
+        file_put_contents('/home/isucon/isuumo/webapp/php/data/low_priced_estate.json', json_encode([
             'estates' => array_map(
                 function(Estate $estate) {
                     return $estate->toArray();
