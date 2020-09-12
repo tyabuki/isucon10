@@ -32,6 +32,53 @@ function getRange(RangeCondition $condition, string $rangeId): ?Range
     return null;
 }
 
+    function estate_refresh_low_priced($pdo) {
+        $query = 'SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate ORDER BY rent ASC, id ASC LIMIT :limit';
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':limit', NUM_LIMIT, PDO::PARAM_INT);
+        $stmt->execute();
+        $estates = $stmt->fetchAll(PDO::FETCH_CLASS, Estate::class);
+
+        if (count($estates) === 0) {
+            file_put_contents('/home/isucon/isuumo/webapp/php/data/low_priced_estate.json', json_encode([
+                'chairs' => []
+            ]));
+        }
+
+        file_put_contents('/home/isucon/isuumo/webapp/php/data/low_priced_estate.json', json_encode([
+            'estates' => array_map(
+                function(Estate $estate) {
+                    return $estate->toArray();
+                },
+                $estates
+            )
+        ]));
+    }
+
+    function chair_refresh_low_priced($pdo) {
+        $query = 'SELECT id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock FROM chair WHERE stock > 0 ORDER BY price ASC, id ASC LIMIT :limit';
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':limit', NUM_LIMIT, PDO::PARAM_INT);
+        $stmt->execute();
+        $chairs = $stmt->fetchAll(PDO::FETCH_CLASS, Chair::class);
+
+        if (count($chairs) === 0) {
+            file_put_contents('/home/isucon/isuumo/webapp/php/data/low_priced_chair.json', json_encode([
+                'chairs' => []
+            ]));
+        }
+
+        file_put_contents('/home/isucon/isuumo/webapp/php/data/low_priced_chair.json', json_encode([
+            'chairs' => array_map(
+                function(Chair $chair) {
+                    return $chair->toArray();
+                },
+                $chairs
+            )
+        ]));
+    }
+
+
 return function (App $app) {
     $app->options('/{routes:.*}', function (Request $request, Response $response) {
         // CORS Pre-Flight OPTIONS Request Handler
@@ -70,8 +117,9 @@ return function (App $app) {
             'language' => 'php',
         ]));
 
-	file_get_contents('http://localhost/api/chair/refresh_low_priced');
-	file_get_contents('http://localhost/api/estate/refresh_low_priced');
+	chair_refresh_low_priced($this->get(PDO::class));
+	estate_refresh_low_priced($this->get(PDO::class));
+	sleep(5);
         return $response->withHeader('Content-Type', 'application/json');
     });
 
@@ -278,7 +326,8 @@ return function (App $app) {
 
 	    $pdo->commit();
 
-	    file_get_contents('http://localhost/api/chair/refresh_low_priced');
+
+	chair_refresh_low_priced($this->get(PDO::class));
         } catch (PDOException $e) {
             $pdo->rollBack();
 //            $this->get('logger')->error(sprintf('DB Execution Error: on getting a chair by id : %s', $id));
@@ -355,8 +404,9 @@ return function (App $app) {
                 ]);
             }
 
-            $pdo->commit();
-	    file_get_contents('http://localhost/api/chair/refresh_low_priced');
+	    $pdo->commit();
+
+	estate_refresh_low_priced($this->get(PDO::class));
         } catch (PDOException $e) {
             $pdo->rollBack();
 //            $this->get('logger')->error(sprintf('failed to insert chair: %s', $e->getMessage()));
@@ -407,8 +457,9 @@ return function (App $app) {
                 ]);
             }
 
-            $pdo->commit();
-	    file_get_contents('http://localhost/api/estate/refresh_low_priced');
+	    $pdo->commit();
+
+	estate_refresh_low_priced($this->get(PDO::class));
         } catch (PDOException $e) {
             $pdo->rollBack();
 //            $this->get('logger')->error(sprintf('failed to insert estate: %s', $e->getMessage()));
