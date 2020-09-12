@@ -39,5 +39,6 @@ CREATE TABLE isuumo.chair
     stock       INTEGER         NOT NULL,
     INDEX price(price),
     INDEX color(color)
-    INDEX kind(kind)
+    INDEX kind(kind),
+    INDEX stock(stock)
 );
