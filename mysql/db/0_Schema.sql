@@ -25,10 +25,10 @@ CREATE TABLE isuumo.estate
     INDEX idx_rent(rent, id)
 );
 
-alter table estate add index sort_idx(popularity, id);
-alter table estate add index w_search_idx(door_width, popularity, id);
-alter table estate add index h_search_idx(door_height, popularity, id);
-alter table estate add index r_search_idx(rent, popularity, id);
+alter table isuumo.estate add index sort_idx(popularity, id);
+alter table isuumo.estate add index w_search_idx(door_width, popularity, id);
+alter table isuumo.estate add index h_search_idx(door_height, popularity, id);
+alter table isuumo.estate add index r_search_idx(rent, popularity, id);
 
 
 CREATE TABLE isuumo.chair
@@ -50,10 +50,10 @@ CREATE TABLE isuumo.chair
     INDEX idx_popularity(popularity, id)
 );
 
-alter table chair add index sort_idx(popularity, id);
-alter table chair add index w_search_idx(width, stock, popularity, id);
-alter table chair add index h_search_idx(height, stock, popularity, id);
-alter table chair add index d_search_idx(depth, stock, popularity, id);
-alter table chair add index p_search_idx(price, stock, popularity, id);
-alter table chair add index c_search_idx(color, stock, popularity, id);
-alter table chair add index kind_search_idx(kind, stock, popularity, id);
+alter table isuumo.chair add index sort_idx(popularity, id);
+alter table isuumo.chair add index w_search_idx(width, stock, popularity, id);
+alter table isuumo.chair add index h_search_idx(height, stock, popularity, id);
+alter table isuumo.chair add index d_search_idx(depth, stock, popularity, id);
+alter table isuumo.chair add index p_search_idx(price, stock, popularity, id);
+alter table isuumo.chair add index c_search_idx(color, stock, popularity, id);
+alter table isuumo.chair add index kind_search_idx(kind, stock, popularity, id);
