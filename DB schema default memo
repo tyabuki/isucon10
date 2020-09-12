@@ -1,0 +1,56 @@
+mysql> explain chair;
++-------------+---------------+------+-----+---------+-------+
+| Field       | Type          | Null | Key | Default | Extra |
++-------------+---------------+------+-----+---------+-------+
+| id          | int(11)       | NO   | PRI | NULL    |       |
+| name        | varchar(64)   | NO   |     | NULL    |       |
+| description | varchar(4096) | NO   |     | NULL    |       |
+| thumbnail   | varchar(128)  | NO   |     | NULL    |       |
+| price       | int(11)       | NO   |     | NULL    |       |
+| height      | int(11)       | NO   |     | NULL    |       |
+| width       | int(11)       | NO   |     | NULL    |       |
+| depth       | int(11)       | NO   |     | NULL    |       |
+| color       | varchar(64)   | NO   |     | NULL    |       |
+| features    | varchar(64)   | NO   |     | NULL    |       |
+| kind        | varchar(64)   | NO   |     | NULL    |       |
+| popularity  | int(11)       | NO   |     | NULL    |       |
+| stock       | int(11)       | NO   |     | NULL    |       |
++-------------+---------------+------+-----+---------+-------+
+13 rows in set (0.00 sec)
+
+mysql> select count(*) from chair;
++----------+
+| count(*) |
++----------+
+|    29500 |
++----------+
+1 row in set (0.01 sec)
+
+mysql> explain estate;
++-------------+---------------+------+-----+---------+-------+
+| Field       | Type          | Null | Key | Default | Extra |
++-------------+---------------+------+-----+---------+-------+
+| id          | int(11)       | NO   | PRI | NULL    |       |
+| name        | varchar(64)   | NO   |     | NULL    |       |
+| description | varchar(4096) | NO   |     | NULL    |       |
+| thumbnail   | varchar(128)  | NO   |     | NULL    |       |
+| address     | varchar(128)  | NO   |     | NULL    |       |
+| latitude    | double        | NO   |     | NULL    |       |
+| longitude   | double        | NO   |     | NULL    |       |
+| rent        | int(11)       | NO   |     | NULL    |       |
+| door_height | int(11)       | NO   |     | NULL    |       |
+| door_width  | int(11)       | NO   |     | NULL    |       |
+| features    | varchar(64)   | NO   |     | NULL    |       |
+| popularity  | int(11)       | NO   |     | NULL    |       |
++-------------+---------------+------+-----+---------+-------+
+12 rows in set (0.00 sec)
+
+mysql> select count(*) from estate;
++----------+
+| count(*) |
++----------+
+|    29500 |
++----------+
+1 row in set (0.01 sec)
+
+mysql>
