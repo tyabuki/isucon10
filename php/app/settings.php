@@ -15,10 +15,10 @@ return function (ContainerBuilder $containerBuilder) {
                 'level' => Logger::DEBUG,
             ],
             'database' => [
-                'host' => getenv('MYSQL_HOST') ?: '127.0.0.1',
+                'host' => getenv('MYSQL_HOST') ?: '10.162.36.103',
                 'port' => getenv('MYSQL_PORT') ?: '3306',
-                'user' => getenv('MYSQL_USER') ?: 'isucon',
-                'pass' => getenv('MYSQL_PASS') ?: 'isucon',
+                'user' => getenv('MYSQL_USER') ?: 'root',
+                'pass' => getenv('MYSQL_PASS') ?: 'Knishiya248!',
                 'dbname' => getenv('MYSQL_DBNAME') ?: 'isuumo',
             ],
         ],
