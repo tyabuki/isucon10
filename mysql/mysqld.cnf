@@ -1,0 +1,117 @@
+#
+# The Percona Server 8.0 configuration file.
+#
+# For explanations see
+# http://dev.mysql.com/doc/mysql/en/server-system-variables.html
+
+[mysqld]
+pid-file	= /var/run/mysqld/mysqld.pid
+socket		= /var/run/mysqld/mysqld.sock
+datadir		= /var/lib/mysql
+log-error	= /var/log/mysql/error.log
+
+
+
+# /etc/mysql/mysql.conf.d/default-auth-override.cnf
+# PHPで認証が通らないのでlegacy authにする
+# https://qiita.com/ucan-lab/items/3ae911b7e13287a5b917
+default-authentication-plugin = mysql_native_password
+
+
+### log
+# binlog無効化 (8.0+からデフォルトで有効になった)
+# https://dev.mysql.com/doc/refman/8.0/en/binary-log.html
+skip-log-bin
+
+slow_query_log = 1
+#slow_query_log = 0
+# 出力する閾値(secで指定、micro secの精度まで小数点以下で指定可能)
+long_query_time = 0.1
+slow_query_log_file = /var/log/mysql/slow.log
+
+# 一般クエリログ
+general_log = 0
+general_log_file = /var/log/mysql/query.log
+
+# プロファイリング
+# https://blog.cybozu.io/entry/2018/08/08/080000
+#performance_schema = on
+
+
+### innodb
+# 目安: innodb_log_file_size * innodb_log_files_in_group <= innodb_buffer_pool_size
+# DB専用サーバなら物理メモリサイズの最大8割程度割り当ててもよい
+#innodb_buffer_pool_size = 256M
+#innodb_log_file_size = 128M
+#innodb_log_files_in_group = 2
+innodb_buffer_pool_size = 256M
+innodb_log_file_size = 128M
+innodb_log_files_in_group = 2
+
+#innodb_additional_mem_pool_size = 16M
+#innodb_log_buffer_size = 16M
+
+#innodb_thread_concurrency = 4
+
+# テーブルごとにibdataを作る
+#innodb_file_per_table = 1
+
+# default200,単独の7200rpm HDDとかなら100,I/O性能が良ければもっと高く
+#innodb_io_capacity = 500
+
+# テーブルがbuffer poolに収まる程度ならO_DIRECTで
+innodb_flush_method = O_DIRECT
+
+# logファイルのflushもディスクflushも毎秒1回(transactionがcommitされてもしない)
+innodb_flush_log_at_trx_commit = 0
+
+# 二重書き込みを停止
+innodb_doublewrite = 0
+
+# チェックサムの計算を省略
+innodb_checksum_algorithm = none
+
+# トランザクション分離レベルをクソ化する
+transaction-isolation = READ-COMMITTED
+
+# TODO: 8.0+
+# deadlock detectionを無効化
+# https://dev.mysql.com/doc/refman/8.0/en/innodb-parameters.html#sysvar_innodb_deadlock_detect
+#innodb_deadlock_detect = on
+innodb_deadlock_detect = off
+
+## thread pool
+# 無効
+#thread_handling = one-thread-per-connection
+# 有効
+thread_handling = pool-of-threads
+# vCPUの数あたりで
+#thread_pool_size = 2
+#thread-pool-idle-timeout = 3600
+#thread_pool_oversubscribe = 6
+
+
+### buffer
+# TODO: 8.0.2+
+# TempTableストレージエンジンの総量の制限 (default: 1GB)
+# http://nippondanji.blogspot.com/2018/06/temptable.html
+# https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html#sysvar_temptable_max_ram
+temptable_max_ram = 1073741824
+
+
+# TODO: 生煮え
+#max_heap_table_size = 128M
+#tmp_table_size = 128M
+sort_buffer_size = 4M
+#read_rnd_buffer_size = 512K
+#join_buffer_size = 256K
+#read_buffer_size = 256K
+
+
+### 他
+# クソ password を許可する
+#validate_password_policy = 0
+#validate_password_length = 4
+
+
+
