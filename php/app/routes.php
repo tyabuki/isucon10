@@ -172,7 +172,7 @@ return function (App $app) {
             return $response->withStatus(StatusCodeInterface::STATUS_BAD_REQUEST);
         }
 
-        $searchQuery = 'SELECT * FROM chair WHERE ';
+        $searchQuery = 'SELECT id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock FROM chair WHERE ';
         $countQuery = 'SELECT COUNT(*) FROM chair WHERE ';
         $searchCondition = implode(' AND ', $conditions);
         $limitOffset = ' ORDER BY popularity DESC, id ASC LIMIT :limit OFFSET :offset';
@@ -210,7 +210,7 @@ return function (App $app) {
     });
 
     $app->get('/api/chair/low_priced', function(Request $request, Response $response) {
-        $query = 'SELECT * FROM chair WHERE stock > 0 ORDER BY price ASC, id ASC LIMIT :limit';
+        $query = 'SELECT id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock FROM chair WHERE stock > 0 ORDER BY price ASC, id ASC LIMIT :limit';
         $stmt = $this->get(PDO::class)->prepare($query);
         $stmt->bindValue(':limit', NUM_LIMIT, PDO::PARAM_INT);
         $stmt->execute();
@@ -236,12 +236,6 @@ return function (App $app) {
         return $response->withHeader('Content-Type', 'application/json');
     });
 
-    $app->get('/api/chair/search/condition', function(Request $request, Response $response) {
-        $chairSearchCondition = $this->get(ChairSearchCondition::class);
-        $response->getBody()->write(json_encode($chairSearchCondition));
-        return $response->withHeader('Content-Type', 'application/json');
-    });
-
     $app->post('/api/chair/buy/{id}', function(Request $request, Response $response, array $args) {
         $id = $args['id'] ?? null;
         if (empty($id) || !is_numeric($id)) {
@@ -253,7 +247,7 @@ return function (App $app) {
 
         try {
             $pdo->beginTransaction();
-            $stmt = $pdo->prepare('SELECT * FROM chair WHERE id = :id AND stock > 0 FOR UPDATE');
+            $stmt = $pdo->prepare('SELECT id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock FROM chair WHERE id = :id AND stock > 0 FOR UPDATE');
             $stmt->bindValue(':id', $id, PDO::PARAM_INT);
             $stmt->execute();
             $chair = $stmt->fetchObject(Chair::class);
@@ -289,7 +283,7 @@ return function (App $app) {
             return $response->withStatus(StatusCodeInterface::STATUS_BAD_REQUEST);
         }
 
-        $query = 'SELECT * FROM chair WHERE id = :id';
+        $query = 'SELECT id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock FROM chair WHERE id = :id';
         $stmt = $this->get(PDO::class)->prepare($query);
         $stmt->execute([':id' => $id]);
         $chair = $stmt->fetchObject(Chair::class);
@@ -485,7 +479,7 @@ return function (App $app) {
             return $response->withStatus(StatusCodeInterface::STATUS_BAD_REQUEST);
         }
 
-        $searchQuery = 'SELECT * FROM estate WHERE ';
+        $searchQuery = 'SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate WHERE ';
         $countQuery = 'SELECT COUNT(*) FROM estate WHERE ';
         $searchCondition = implode(' AND ', $conditions);
         $limitOffset = ' ORDER BY popularity DESC, id ASC LIMIT :limit OFFSET :offset';
@@ -523,7 +517,7 @@ return function (App $app) {
     });
 
     $app->get('/api/estate/low_priced', function(Request $request, Response $response) {
-        $query = 'SELECT * FROM estate ORDER BY rent ASC, id ASC LIMIT :limit';
+        $query = 'SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate ORDER BY rent ASC, id ASC LIMIT :limit';
         $stmt = $this->get(PDO::class)->prepare($query);
         $stmt->bindValue(':limit', NUM_LIMIT, PDO::PARAM_INT);
         $stmt->execute();
@@ -556,7 +550,7 @@ return function (App $app) {
             return $response->withStatus(StatusCodeInterface::STATUS_BAD_REQUEST);
         }
 
-        $query = 'SELECT * FROM estate WHERE id = :id';
+        $query = 'SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate WHERE id = :id';
         $stmt = $this->get(PDO::class)->prepare($query);
         $stmt->execute([':id' => $id]);
         $estate = $stmt->fetchObject(Estate::class);
@@ -581,7 +575,7 @@ return function (App $app) {
 
         $boundingBox = BoundingBox::createFromCordinates($coordinates);
 
-        $query = 'SELECT * FROM estate WHERE latitude <= ? AND latitude >= ? AND longitude <= ? AND longitude >= ? ORDER BY popularity DESC, id ASC';
+        $query = 'SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate WHERE latitude <= ? AND latitude >= ? AND longitude <= ? AND longitude >= ? ORDER BY popularity DESC, id ASC';
         $stmt = $this->get(PDO::class)->prepare($query);
         $stmt->execute([
             $boundingBox->bottomRightCorner->latitude,
@@ -594,7 +588,7 @@ return function (App $app) {
         $estatesInPolygon = Array();
         foreach ($estatesInBoundingBox as $estate) {
             $point = sprintf("'POINT(%f %f)'", $estate->latitude, $estate->longitude);
-            $query = sprintf('SELECT * FROM estate WHERE id = ? AND ST_Contains(ST_PolygonFromText(%s), ST_GeomFromText(%s))', Coordinate::toText($coordinates), $point);
+            $query = sprintf('SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate WHERE id = ? AND ST_Contains(ST_PolygonFromText(%s), ST_GeomFromText(%s))', Coordinate::toText($coordinates), $point);
             $stmt = $this->get(PDO::class)->prepare($query);
             $stmt->execute([$estate->id]);
             $e = $stmt->fetchObject(Estate::class);
@@ -620,12 +614,6 @@ return function (App $app) {
         return $response->withHeader('Content-Type', 'application/json');
     });
 
-    $app->get('/api/estate/search/condition', function(Request $request, Response $response) {
-        $estateSearchCondition = $this->get(EstateSearchCondition::class);
-        $response->getBody()->write(json_encode($estateSearchCondition));
-        return $response->withHeader('Content-Type', 'application/json');
-    });
-
     $app->get('/api/recommended_estate/{id}', function(Request $request, Response $response, array $args) {
         $id = $args['id'] ?? null;
         if (empty($id) || !is_numeric($id)) {
@@ -633,7 +621,7 @@ return function (App $app) {
             return $response->withStatus(StatusCodeInterface::STATUS_BAD_REQUEST);
         }
 
-        $query = 'SELECT * FROM chair WHERE id = ?';
+        $query = 'SELECT id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock FROM chair WHERE id = ?';
         $stmt = $this->get(PDO::class)->prepare($query);
         $stmt->execute([$id]);
         $chair = $stmt->fetchObject(Chair::class);
@@ -646,7 +634,7 @@ return function (App $app) {
 	$chair_edges = [$chair->getWidth(), $chair->getHeight(), $chair->getDepth()];
 	sort($chair_edges);
 
-        $query = 'SELECT * FROM estate WHERE door_long >= :secondedge AND door_short >= :firstedge ORDER BY popularity DESC, id ASC LIMIT :limit';
+        $query = 'SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate FROM estate WHERE door_long >= :secondedge AND door_short >= :firstedge ORDER BY popularity DESC, id ASC LIMIT :limit';
         $stmt = $this->get(PDO::class)->prepare($query);
         $stmt->bindValue(':secondedge', $chair_edges[1], PDO::PARAM_INT);
         $stmt->bindValue(':firstedge', $chair_edges[0], PDO::PARAM_INT);
@@ -673,7 +661,7 @@ return function (App $app) {
             return $response->withStatus(StatusCodeInterface::STATUS_BAD_REQUEST);
         }
 
-        $stmt = $this->get(PDO::class)->prepare('SELECT * FROM estate WHERE id = :id');
+        $stmt = $this->get(PDO::class)->prepare('SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate WHERE id = :id');
         $stmt->bindValue(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
 
