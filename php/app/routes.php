@@ -32,6 +32,53 @@ function getRange(RangeCondition $condition, string $rangeId): ?Range
     return null;
 }
 
+    function estate_refresh_low_priced($pdo) {
+        $query = 'SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate ORDER BY rent ASC, id ASC LIMIT :limit';
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':limit', NUM_LIMIT, PDO::PARAM_INT);
+        $stmt->execute();
+        $estates = $stmt->fetchAll(PDO::FETCH_CLASS, Estate::class);
+
+        if (count($estates) === 0) {
+            file_put_contents('/home/isucon/isuumo/webapp/php/data/low_priced_estate.json', json_encode([
+                'chairs' => []
+            ]));
+        }
+
+        file_put_contents('/home/isucon/isuumo/webapp/php/data/low_priced_estate.json', json_encode([
+            'estates' => array_map(
+                function(Estate $estate) {
+                    return $estate->toArray();
+                },
+                $estates
+            )
+        ]));
+    }
+
+    function chair_refresh_low_priced($pdo) {
+        $query = 'SELECT id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock FROM chair WHERE stock > 0 ORDER BY price ASC, id ASC LIMIT :limit';
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':limit', NUM_LIMIT, PDO::PARAM_INT);
+        $stmt->execute();
+        $chairs = $stmt->fetchAll(PDO::FETCH_CLASS, Chair::class);
+
+        if (count($chairs) === 0) {
+            file_put_contents('/home/isucon/isuumo/webapp/php/data/low_priced_chair.json', json_encode([
+                'chairs' => []
+            ]));
+        }
+
+        file_put_contents('/home/isucon/isuumo/webapp/php/data/low_priced_chair.json', json_encode([
+            'chairs' => array_map(
+                function(Chair $chair) {
+                    return $chair->toArray();
+                },
+                $chairs
+            )
+        ]));
+    }
+
+
 return function (App $app) {
     $app->options('/{routes:.*}', function (Request $request, Response $response) {
         // CORS Pre-Flight OPTIONS Request Handler
@@ -70,12 +117,21 @@ return function (App $app) {
             'language' => 'php',
         ]));
 
-	file_get_contents('http://localhost/api/chair/refresh_low_priced');
-	file_get_contents('http://localhost/api/estate/refresh_low_priced');
+	chair_refresh_low_priced($this->get(PDO::class));
+	chair_refresh_low_priced($this->get(PDO::class));
+	sleep(5);
         return $response->withHeader('Content-Type', 'application/json');
     });
 
     $app->get('/api/chair/search', function(Request $request, Response $response) {
+        $pdo = new PDO(
+            'mysql:host=10.162.36.102;dbname=isuumo;port=3306',
+            'isucon',
+            'isucon'
+        );
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $pdo->setAttribute(PDO::ATTR_PERSISTENT, true);
         $conditions = [];
         $params = [];
 
@@ -190,7 +246,7 @@ return function (App $app) {
         $params[':limit'] = [(int)$perPage, PDO::PARAM_INT];
         $params[':offset'] = [(int)$page*$perPage, PDO::PARAM_INT];
 
-        $stmt = $this->get(PDO::class)->prepare($searchQuery . $searchCondition . $limitOffset);
+        $stmt = $pdo->prepare($searchQuery . $searchCondition . $limitOffset);
         foreach ($params as $key => $bind) {
             list($value, $type) = $bind;
             $stmt->bindValue($key, $value, $type);
@@ -217,33 +273,6 @@ return function (App $app) {
         return $response->withHeader('Content-Type', 'application/json');
     });
      */
-
-    $app->get('/api/chair/refresh_low_priced', function(Request $request, Response $response) {
-        $query = 'SELECT id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock FROM chair WHERE stock > 0 ORDER BY price ASC, id ASC LIMIT :limit';
-        $stmt = $this->get(PDO::class)->prepare($query);
-        $stmt->bindValue(':limit', NUM_LIMIT, PDO::PARAM_INT);
-        $stmt->execute();
-        $chairs = $stmt->fetchAll(PDO::FETCH_CLASS, Chair::class);
-
-        if (count($chairs) === 0) {
-            $this->get('logger')->error('getLowPricedChair not found');
-            $response->getBody()->write(json_encode([
-                'chairs' => []
-            ]));
-            return $response->withHeader('Content-Type', 'application/json');
-        }
-
-        file_put_contents('/home/isucon/isuumo/webapp/php/data/low_priced_chair.json', json_encode([
-            'chairs' => array_map(
-                function(Chair $chair) {
-                    return $chair->toArray();
-                },
-                $chairs
-            )
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
-    });
 
     $app->post('/api/chair/buy/{id}', function(Request $request, Response $response, array $args) {
         $id = $args['id'] ?? null;
@@ -278,7 +307,7 @@ return function (App $app) {
 
 	    $pdo->commit();
 
-	    file_get_contents('http://localhost/api/chair/refresh_low_priced');
+	    chair_refresh_low_priced($this->get(PDO::class));
         } catch (PDOException $e) {
             $pdo->rollBack();
             $this->get('logger')->error(sprintf('DB Execution Error: on getting a chair by id : %s', $id));
@@ -356,7 +385,7 @@ return function (App $app) {
             }
 
             $pdo->commit();
-	    file_get_contents('http://localhost/api/chair/refresh_low_priced');
+	    chair_refresh_low_priced($this->get(PDO::class));
         } catch (PDOException $e) {
             $pdo->rollBack();
             $this->get('logger')->error(sprintf('failed to insert chair: %s', $e->getMessage()));
@@ -408,7 +437,7 @@ return function (App $app) {
             }
 
             $pdo->commit();
-	    file_get_contents('http://localhost/api/estate/refresh_low_priced');
+	    estate_refresh_low_priced($this->get(PDO::class));
         } catch (PDOException $e) {
             $pdo->rollBack();
             $this->get('logger')->error(sprintf('failed to insert estate: %s', $e->getMessage()));
@@ -419,6 +448,15 @@ return function (App $app) {
     });
 
     $app->get('/api/estate/search', function(Request $request, Response $response) {
+        $pdo = new PDO(
+            'mysql:host=10.162.36.102;dbname=isuumo;port=3306',
+            'isucon',
+            'isucon'
+        );
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+	$pdo->setAttribute(PDO::ATTR_PERSISTENT, true);
+
         $conditions = [];
         $params = [];
 
@@ -498,7 +536,7 @@ return function (App $app) {
         $searchCondition = implode(' AND ', $conditions);
         $limitOffset = ' ORDER BY popularity DESC, id ASC LIMIT :limit OFFSET :offset';
 
-        $stmt = $this->get(PDO::class)->prepare($countQuery . $searchCondition);
+        $stmt = $pdo->prepare($countQuery . $searchCondition);
         foreach ($params as $key => $bind) {
             list($value, $type) = $bind;
             $stmt->bindValue($key, $value, $type);
@@ -509,7 +547,7 @@ return function (App $app) {
         $params[':limit'] = [(int)$perPage, PDO::PARAM_INT];
         $params[':offset'] = [(int)$page*$perPage, PDO::PARAM_INT];
 
-        $stmt = $this->get(PDO::class)->prepare($searchQuery . $searchCondition . $limitOffset);
+        $stmt = $pdo->prepare($searchQuery . $searchCondition . $limitOffset);
         foreach ($params as $key => $bind) {
             list($value, $type) = $bind;
             $stmt->bindValue($key, $value, $type);
@@ -519,33 +557,6 @@ return function (App $app) {
 
         $response->getBody()->write(json_encode([
             'count' => $count,
-            'estates' => array_map(
-                function(Estate $estate) {
-                    return $estate->toArray();
-                },
-                $estates
-            )
-        ]));
-
-        return $response->withHeader('Content-Type', 'application/json');
-    });
-
-    $app->get('/api/estate/refresh_low_priced', function(Request $request, Response $response) {
-        $query = 'SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate ORDER BY rent ASC, id ASC LIMIT :limit';
-        $stmt = $this->get(PDO::class)->prepare($query);
-        $stmt->bindValue(':limit', NUM_LIMIT, PDO::PARAM_INT);
-        $stmt->execute();
-        $estates = $stmt->fetchAll(PDO::FETCH_CLASS, Estate::class);
-
-        if (count($estates) === 0) {
-            $this->get('logger')->error('getLowPricedEstate not found');
-            $response->getBody()->write(json_encode([
-                'chairs' => []
-            ]));
-            return $response->withHeader('Content-Type', 'application/json');
-        }
-
-        file_put_contents('/home/isucon/isuumo/webapp/php/data/low_priced_estate.json', json_encode([
             'estates' => array_map(
                 function(Estate $estate) {
                     return $estate->toArray();
@@ -578,6 +589,14 @@ return function (App $app) {
     });
 
     $app->post('/api/estate/nazotte', function(request $request, Response $response) {
+        $pdo = new PDO(
+            'mysql:host=10.162.36.102;dbname=isuumo;port=3306',
+            'isucon',
+            'isucon'
+        );
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $pdo->setAttribute(PDO::ATTR_PERSISTENT, true);
         $json = json_decode($request->getBody()->getContents(), true);
         $coordinates = array_map(
             Coordinate::class . '::createFromJson',
@@ -590,7 +609,7 @@ return function (App $app) {
         $boundingBox = BoundingBox::createFromCordinates($coordinates);
 
         $query = 'SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate WHERE latitude <= ? AND latitude >= ? AND longitude <= ? AND longitude >= ? ORDER BY popularity DESC, id ASC';
-        $stmt = $this->get(PDO::class)->prepare($query);
+        $stmt = $pdo->prepare($query);
         $stmt->execute([
             $boundingBox->bottomRightCorner->latitude,
             $boundingBox->topLeftCorner->latitude,
@@ -603,7 +622,7 @@ return function (App $app) {
         foreach ($estatesInBoundingBox as $estate) {
             $point = sprintf("'POINT(%f %f)'", $estate->latitude, $estate->longitude);
             $query = sprintf('SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate WHERE id = ? AND ST_Contains(ST_PolygonFromText(%s), ST_GeomFromText(%s))', Coordinate::toText($coordinates), $point);
-            $stmt = $this->get(PDO::class)->prepare($query);
+            $stmt = $pdo->prepare($query);
             $stmt->execute([$estate->id]);
             $e = $stmt->fetchObject(Estate::class);
             if ($e) {
@@ -629,6 +648,14 @@ return function (App $app) {
     });
 
     $app->get('/api/recommended_estate/{id}', function(Request $request, Response $response, array $args) {
+        $pdo = new PDO(
+            'mysql:host=10.162.36.102;dbname=isuumo;port=3306',
+            'isucon',
+            'isucon'
+        );
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $pdo->setAttribute(PDO::ATTR_PERSISTENT, true);
         $id = $args['id'] ?? null;
         if (empty($id) || !is_numeric($id)) {
             $this->get('logger')->info('post request document failed');
@@ -636,7 +663,7 @@ return function (App $app) {
         }
 
         $query = 'SELECT id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock FROM chair WHERE id = ?';
-        $stmt = $this->get(PDO::class)->prepare($query);
+        $stmt = $pdo->prepare($query);
         $stmt->execute([$id]);
         $chair = $stmt->fetchObject(Chair::class);
 
@@ -649,7 +676,7 @@ return function (App $app) {
 	sort($chair_edges);
 
         $query = 'SELECT * FROM estate WHERE door_long >= :secondedge AND door_short >= :firstedge ORDER BY popularity DESC, id ASC LIMIT :limit';
-        $stmt = $this->get(PDO::class)->prepare($query);
+        $stmt = $pdo->prepare($query);
         $stmt->bindValue(':secondedge', $chair_edges[1], PDO::PARAM_INT);
         $stmt->bindValue(':firstedge', $chair_edges[0], PDO::PARAM_INT);
         $stmt->bindValue(':limit', NUM_LIMIT, PDO::PARAM_INT);
