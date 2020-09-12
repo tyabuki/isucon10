@@ -45,6 +45,7 @@ return function (App $app) {
             '../../mysql/db/0_Schema.sql',
             '../../mysql/db/1_DummyEstateData.sql',
             '../../mysql/db/2_DummyChairData.sql',
+            '../../mysql/db/3_After.sql',
         ];
 
         foreach ($paths as $path) {
@@ -373,7 +374,7 @@ return function (App $app) {
             $pdo->beginTransaction();
 
             foreach ($records as $record) {
-                $query = 'INSERT INTO estate VALUES(:id, :name, :description, :thumbnail, :address, :latitude, :longitude, :rent, :door_height, :door_width, :features, :popularity)';
+                $query = 'INSERT INTO estate VALUES(:id, :name, :description, :thumbnail, :address, :latitude, :longitude, :rent, :door_height, :door_width, :features, :popularity, :door_long, :door_short)';
                 $stmt = $pdo->prepare($query);
                 $stmt->execute([
                     'id' => (int)trim($record[0] ?? null),
@@ -387,7 +388,9 @@ return function (App $app) {
                     'door_height' => (int)trim($record[8] ?? null),
                     'door_width' => (int)trim($record[9] ?? null),
                     'features' => trim($record[10] ?? null),
-                    'popularity' => (int)trim($record[11] ?? null),
+		    'popularity' => (int)trim($record[11] ?? null),
+		    'door_long' => max((int)trim($record[8] ?? null), (int)trim($record[9] ?? null)),
+		    'door_short' => min((int)trim($record[8] ?? null), (int)trim($record[9] ?? null)),
                 ]);
             }
 
@@ -628,11 +631,13 @@ return function (App $app) {
             return $response->withStatus(StatusCodeInterface::STATUS_BAD_REQUEST);
         }
 
-        $query = 'SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate WHERE (door_width >= :w AND door_height >= :h) OR (door_width >= :w AND door_height >= :d) OR (door_width >= :h AND door_height >= :w) OR (door_width >= :h AND door_height >= :d) OR (door_width >= :d AND door_height >= :w) OR (door_width >= :d AND door_height >= :h) ORDER BY popularity DESC, id ASC LIMIT :limit';
+	$chair_edges = [$chair->getWidth(), $chair->getHeight(), $chair->getDepth()];
+	sort($chair_edges);
+
+        $query = 'SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate FROM estate WHERE door_long >= :secondedge AND door_short >= :firstedge ORDER BY popularity DESC, id ASC LIMIT :limit';
         $stmt = $this->get(PDO::class)->prepare($query);
-        $stmt->bindValue(':w', $chair->getWidth(), PDO::PARAM_INT);
-        $stmt->bindValue(':h', $chair->getHeight(), PDO::PARAM_INT);
-        $stmt->bindValue(':d', $chair->getDepth(), PDO::PARAM_INT);
+        $stmt->bindValue(':secondedge', $chair_edges[1], PDO::PARAM_INT);
+        $stmt->bindValue(':firstedge', $chair_edges[0], PDO::PARAM_INT);
         $stmt->bindValue(':limit', NUM_LIMIT, PDO::PARAM_INT);
         $stmt->execute();
         $estates = $stmt->fetchAll(PDO::FETCH_CLASS, Estate::class);
