@@ -23,8 +23,8 @@ default-authentication-plugin = mysql_native_password
 # https://dev.mysql.com/doc/refman/8.0/en/binary-log.html
 skip-log-bin
 
-slow_query_log = 1
-#slow_query_log = 0
+#slow_query_log = 1
+slow_query_log = 0
 # 出力する閾値(secで指定、micro secの精度まで小数点以下で指定可能)
 long_query_time = 0.1
 slow_query_log_file = /var/log/mysql/slow.log
