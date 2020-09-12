@@ -634,7 +634,7 @@ return function (App $app) {
 	$chair_edges = [$chair->getWidth(), $chair->getHeight(), $chair->getDepth()];
 	sort($chair_edges);
 
-        $query = 'SELECT id, name, description, thumbnail, address, latitude, longitude, rent, door_height, door_width, features, popularity FROM estate FROM estate WHERE door_long >= :secondedge AND door_short >= :firstedge ORDER BY popularity DESC, id ASC LIMIT :limit';
+        $query = 'SELECT * FROM estate WHERE door_long >= :secondedge AND door_short >= :firstedge ORDER BY popularity DESC, id ASC LIMIT :limit';
         $stmt = $this->get(PDO::class)->prepare($query);
         $stmt->bindValue(':secondedge', $chair_edges[1], PDO::PARAM_INT);
         $stmt->bindValue(':firstedge', $chair_edges[0], PDO::PARAM_INT);
