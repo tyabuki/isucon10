@@ -70,6 +70,7 @@ return function (App $app) {
             'language' => 'php',
         ]));
 
+	file_get_contents('http://localhost/api/chair/refresh_low_priced');
         return $response->withHeader('Content-Type', 'application/json');
     });
 
@@ -209,7 +210,14 @@ return function (App $app) {
         return $response->withHeader('Content-Type', 'application/json');
     });
 
+    /*
     $app->get('/api/chair/low_priced', function(Request $request, Response $response) {
+	$response->getBody()->write(file_get_contents('/home/isucon/isuumo/webapp/php/data/low_priced_chair.json'));
+        return $response->withHeader('Content-Type', 'application/json');
+    });
+     */
+
+    $app->get('/api/chair/refresh_low_priced', function(Request $request, Response $response) {
         $query = 'SELECT id, name, description, thumbnail, price, height, width, depth, color, features, kind, popularity, stock FROM chair WHERE stock > 0 ORDER BY price ASC, id ASC LIMIT :limit';
         $stmt = $this->get(PDO::class)->prepare($query);
         $stmt->bindValue(':limit', NUM_LIMIT, PDO::PARAM_INT);
@@ -224,7 +232,7 @@ return function (App $app) {
             return $response->withHeader('Content-Type', 'application/json');
         }
 
-        $response->getBody()->write(json_encode([
+        file_put_contents('/home/isucon/isuumo/webapp/php/data/low_priced_chair.json', json_encode([
             'chairs' => array_map(
                 function(Chair $chair) {
                     return $chair->toArray();
@@ -252,6 +260,7 @@ return function (App $app) {
             $stmt->execute();
             $chair = $stmt->fetchObject(Chair::class);
 
+
             if (!$chair) {
                 $pdo->rollBack();
                 $this->get('logger')->info(sprintf('buyChair chair id "%s" not found', $id));
@@ -266,7 +275,9 @@ return function (App $app) {
                 return $response->withStatus(StatusCodeInterface::STATUS_INTERNAL_SERVER_ERROR);
             }
 
-            $pdo->commit();
+	    $pdo->commit();
+
+	    file_get_contents('http://localhost/api/chair/refresh_low_priced');
         } catch (PDOException $e) {
             $pdo->rollBack();
             $this->get('logger')->error(sprintf('DB Execution Error: on getting a chair by id : %s', $id));
@@ -344,6 +355,7 @@ return function (App $app) {
             }
 
             $pdo->commit();
+	    file_get_contents('http://localhost/api/chair/refresh_low_priced');
         } catch (PDOException $e) {
             $pdo->rollBack();
             $this->get('logger')->error(sprintf('failed to insert chair: %s', $e->getMessage()));
